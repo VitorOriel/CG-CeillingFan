@@ -9,6 +9,7 @@
 #include <GL/glut.h>
 #include <stdlib.h>
 
+static bool lightOn = true;
 static int rotateZaxis = 0, rotateXaxis = 0;
 
 struct Vertex {
@@ -129,6 +130,7 @@ class Cylinder : ComponentInterface {
     public:
         Cylinder(GLdouble baseRadius, GLdouble topRadius, GLdouble height, GLint slices, GLint stacks);
         GLdouble getHeight();
+        GLdouble getRadius();
         void setPosition(Vertex position);
         virtual void draw();
     private:
@@ -151,6 +153,10 @@ Cylinder::Cylinder(GLdouble baseRadius, GLdouble topRadius, GLdouble height, GLi
 
 GLdouble Cylinder::getHeight() {
     return this->height;
+}
+
+GLdouble Cylinder::getRadius() {
+    return this->baseRadius;
 }
 
 void Cylinder::setPosition(Vertex position) {
@@ -226,9 +232,9 @@ void MainSupport::defineBases() {
 void MainSupport::definePropellers() {
     Vertex p = this->position;
     this->propellers = new Propeller[4];
-    GLfloat radius = static_cast<GLfloat>(this->body->getHeight());
-    GLfloat radiusAjusted = radius*2.0f - 0.15f; // Ajusted position for the propeller, to be on the corner of the MainSupport.
-    Vertex ajustedPosition = Vertex((p.x + radiusAjusted), p.y, (p.z + radius/2.0f));
+    GLfloat height = static_cast<GLfloat>(this->body->getHeight());
+    GLfloat radius = static_cast<GLfloat>(this->body->getRadius()); // Ajusted position for the propeller, to be on the corner of the MainSupport.
+    Vertex ajustedPosition = Vertex((p.x + radius*2.5f), p.y, (p.z + height/2.0f));
     for (int i = 0; i < 4; ++i)
         this->propellers[i].setPropeller(ajustedPosition, static_cast<GLfloat>(i)*90.0f);
 }
@@ -296,21 +302,19 @@ void CeilingFan::draw() {
     glPopMatrix();
 }
 
-void init(void) {
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glShadeModel(GL_FLAT);
-    glEnable(GL_LIGHT0);
-    glEnable(GL_LIGHTING);
-    glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-}
-
 void setIlumination() {
     // Light parameters
     float ambientLight[] = {0.3f, 0.3f, 0.3f, 1.0f};
     float diffuseLight[] = {0.7f, 0.7f, 0.7f, 1.0f};
     float specularLight[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    float positionLight[] = {0.0f, 15.5f, 0.0f, 1.0f};
+    float positionLight[] = {1.0f, 1.0f, -15.0f, 1.0f};
+
+    //float ambientLight2[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    //float diffuseLight2[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    //float positionLight2[] = {0.5f, 0.5f, -15.0f, 1.0f};
+
+    //glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseLight);
+    //glMaterialfv(GL_FRONT, GL_AMBIENT, ambientLight);
 
     // Active the ambient light
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientLight);
@@ -320,11 +324,27 @@ void setIlumination() {
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
     glLightfv(GL_LIGHT0, GL_POSITION, positionLight);
+
+    //glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight2);
+    //glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight2);
+    //lLightfv(GL_LIGHT1, GL_POSITION, positionLight2);
+}
+
+void init(void) {
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    setIlumination();
+    glShadeModel(GL_FLAT);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_LIGHT1);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
+    glDisable(GL_DEPTH_TEST);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glutSwapBuffers();
 }
 
 void display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
-    setIlumination();
     CeilingFan* ceilingFan = new CeilingFan();
     glPushMatrix();
         glRotatef(static_cast<GLfloat>(rotateXaxis), 1.0f, 0.0f, 0.0f);
@@ -362,9 +382,27 @@ void keyboard(unsigned char key, int x, int y) {
             rotateZaxis = (rotateZaxis - 10) % 360;
             glutPostRedisplay();
             break;
+        case 'o':
+        case 'O':
+            if (!lightOn) {
+                lightOn = true;
+                glEnable(GL_COLOR_MATERIAL);
+                glEnable(GL_LIGHT0);
+                glEnable(GL_LIGHTING);
+                glDisable(GL_DEPTH_TEST);
+            } else {
+                lightOn = false;
+                glDisable(GL_COLOR_MATERIAL);
+                glDisable(GL_LIGHT0);
+                glDisable(GL_LIGHTING);
+                glEnable(GL_DEPTH_TEST);
+            }
+            glutPostRedisplay();
+            break;
         default:
             break;
     }
+    glutSwapBuffers();
 }
 
 void mouse(int button, int state, int x, int y) {
@@ -378,6 +416,7 @@ void mouse(int button, int state, int x, int y) {
             glutPostRedisplay();
             break;
     }
+    glutSwapBuffers();
 }
 
 int main(int argc, char** argv) {
@@ -394,3 +433,4 @@ int main(int argc, char** argv) {
     glutMainLoop();
     return 0;
 }
+
