@@ -1,15 +1,17 @@
 /**
- * Avaliação 1 Computação Gráfica
+ * Trabalho Computação Gráfica
  * Universidade Federal de Lavras
  * 
  * Autor: Vitor Oriel de Castro Nunes Borges
+ *        Renato Figueiredo Pereira
+ * 
  * Turma: 10A
  */
 
 #include <GL/glut.h>
 #include <stdlib.h>
 
-static bool lightOn = true;
+static bool lightOn = false;
 static int rotateZaxis = 0, rotateXaxis = 0;
 
 struct Vertex {
@@ -309,10 +311,6 @@ void setIlumination() {
     float specularLight[] = {1.0f, 1.0f, 1.0f, 1.0f};
     float positionLight[] = {1.0f, 1.0f, -15.0f, 1.0f};
 
-    //float ambientLight2[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    //float diffuseLight2[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    //float positionLight2[] = {0.5f, 0.5f, -15.0f, 1.0f};
-
     //glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuseLight);
     //glMaterialfv(GL_FRONT, GL_AMBIENT, ambientLight);
 
@@ -324,10 +322,6 @@ void setIlumination() {
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
     glLightfv(GL_LIGHT0, GL_POSITION, positionLight);
-
-    //glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight2);
-    //glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight2);
-    //lLightfv(GL_LIGHT1, GL_POSITION, positionLight2);
 }
 
 void init(void) {
@@ -335,8 +329,6 @@ void init(void) {
     setIlumination();
     glShadeModel(GL_FLAT);
     glEnable(GL_LIGHT0);
-    glEnable(GL_LIGHT1);
-    glEnable(GL_LIGHTING);
     glEnable(GL_COLOR_MATERIAL);
     glDisable(GL_DEPTH_TEST);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
@@ -386,16 +378,10 @@ void keyboard(unsigned char key, int x, int y) {
         case 'O':
             if (!lightOn) {
                 lightOn = true;
-                glEnable(GL_COLOR_MATERIAL);
-                glEnable(GL_LIGHT0);
                 glEnable(GL_LIGHTING);
-                glDisable(GL_DEPTH_TEST);
             } else {
                 lightOn = false;
-                glDisable(GL_COLOR_MATERIAL);
-                glDisable(GL_LIGHT0);
                 glDisable(GL_LIGHTING);
-                glEnable(GL_DEPTH_TEST);
             }
             glutPostRedisplay();
             break;
