@@ -10,6 +10,17 @@
 
 #include <GL/glut.h>
 #include <stdlib.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+/*	Create checkerboard texture	*/
+#define	checkImageWidth 64
+#define	checkImageHeight 64
+static GLubyte checkImage[checkImageHeight][checkImageWidth][4];
+
+#ifdef GL_VERSION_1_1
+static GLuint texName;
+#endif
 
 static bool lightOn = false;
 static int rotateZaxis = 0, rotateXaxis = 0;
@@ -324,6 +335,21 @@ void setIlumination() {
     glLightfv(GL_LIGHT0, GL_POSITION, positionLight);
 }
 
+void makeCheckImage(void)
+{
+   int i, j, c;
+    
+   for (i = 0; i < checkImageHeight; i++) {
+      for (j = 0; j < checkImageWidth; j++) {
+         c = ((((i&0x8)==0)^((j&0x8))==0))*255;
+         checkImage[i][j][0] = (GLubyte) c;
+         checkImage[i][j][1] = (GLubyte) c;
+         checkImage[i][j][2] = (GLubyte) c;
+         checkImage[i][j][3] = (GLubyte) 255;
+      }
+   }
+}
+
 void init(void) {
     glClearColor(0.0, 0.0, 0.0, 0.0);
     setIlumination();
@@ -333,18 +359,58 @@ void init(void) {
     glDisable(GL_DEPTH_TEST);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
     glutSwapBuffers();
+
+   makeCheckImage();
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+#ifdef GL_VERSION_1_1
+   glGenTextures(1, &texName);
+   glBindTexture(GL_TEXTURE_2D, texName);
+#endif
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+   int width, height, nrChannels;
+   unsigned char* data = stbi_load("container.jpg", &width, &height, &nrChannels, 0);
+   if (data) {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+      //glGenerateMipmap(GL_TEXTURE_2D);
+   }
 }
+
 
 void display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
     CeilingFan* ceilingFan = new CeilingFan();
+    glEnable(GL_TEXTURE_2D);
     glPushMatrix();
         glRotatef(static_cast<GLfloat>(rotateXaxis), 1.0f, 0.0f, 0.0f);
         ceilingFan->draw();
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+    #ifdef GL_VERSION_1_1
+    glBindTexture(GL_TEXTURE_2D, texName);
+    #endif
+
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-2.0, -1.0, 0.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-2.0, 1.0, 0.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(0.0, 1.0, 0.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(0.0, -1.0, 0.0);
+
+    glTexCoord2f(0.0, 0.0); glVertex3f(1.0, -1.0, 0.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(1.0, 1.0, 0.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(2.41421, 1.0, -1.41421);
+    glTexCoord2f(1.0, 0.0); glVertex3f(2.41421, -1.0, -1.41421);
+    glEnd();
+    glFlush();
+    glDisable(GL_TEXTURE_2D);
     glPopMatrix();
     glutSwapBuffers();
     delete ceilingFan;
 }
+
 
 void reshape(int w, int h) {
     glViewport(0, 0, static_cast<GLsizei>(w), static_cast<GLsizei>(h)); 
