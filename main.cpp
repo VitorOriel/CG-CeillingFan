@@ -10,7 +10,10 @@
 
 #include <GL/glut.h>
 #include <stdlib.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
+static GLuint texName;
 static bool lightOn = false;
 static int rotateZaxis = 0, rotateXaxis = 0;
 
@@ -28,6 +31,27 @@ struct Vertex {
         this->z = z;
     }
 };
+
+void enableTexture() {
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glGenTextures(1, &texName);
+    glBindTexture(GL_TEXTURE_2D, texName);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load("wood.jpg", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
+}
+
+void disableTexture() {
+    glDisable(GL_TEXTURE_2D);
+}
 
 class ComponentInterface {
     public:
@@ -61,35 +85,41 @@ void Propeller::setPropeller(Vertex position, GLfloat rotate) {
 void Propeller::draw() {
     Vertex pPos = this->position;
     Vertex pBody = this->scaleBody;
+    int angle = static_cast<int>(this->rotate);
+    GLfloat xAngle, yAngle;
+    switch(angle) {
+        case 0:
+            xAngle = 1.0f;
+            yAngle = 0.0f;
+            break;
+        case 90:
+            xAngle = 0.0f;
+            yAngle = 1.0f;
+            break;
+        case 180:
+            xAngle = -1.0f;
+            yAngle = 0.0f;
+            break;
+        case 270:
+            xAngle = 0.0f;
+            yAngle = -1.0f;
+            break;
+    }
+    enableTexture();
     glPushMatrix();
-        int angle = static_cast<int>(this->rotate);
-        GLfloat xAngle, yAngle;
-        switch(angle) {
-            case 0:
-                xAngle = 1.0f;
-                yAngle = 0.0f;
-                break;
-            case 90:
-                xAngle = 0.0f;
-                yAngle = 1.0f;
-                break;
-            case 180:
-                xAngle = -1.0f;
-                yAngle = 0.0f;
-                break;
-            case 270:
-                xAngle = 0.0f;
-                yAngle = -1.0f;
-                break;
-        }
-        glColor3f(0.2f, 0.05f, 0.0f);
         glRotatef(10.0f, xAngle, yAngle, 0.0f);
         glRotatef(this->rotate, 0.0f, 0.0f, 1.0f);
-        glTranslatef(pPos.x, pPos.y, pPos.z);
-        glScalef(pBody.x, pBody.y, pBody.z);
-        glutSolidCube(0.5);
-        glColor3f(1.0f, 1.0f, 1.0f);
+        glTranslatef(pPos.x/2-0.15, pPos.y/2-0.1, pPos.z/2);
+        glScalef(pBody.x/2, pBody.y/2, pBody.z/2);
+        glPolygonMode(GL_FRONT, GL_FILL);
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.0, 0.0); glVertex3f(0.0, 0.0, 1.0);
+            glTexCoord2f(0.0, 1.0); glVertex3f(0.0, 1.0, 1.0);
+            glTexCoord2f(1.0, 1.0); glVertex3f(1.0, 1.0, 1.0);
+            glTexCoord2f(1.0, 0.0); glVertex3f(1.0, 0.0, 1.0);
+        glEnd();
     glPopMatrix();
+    disableTexture();
 }
 
 class Circle : ComponentInterface {
@@ -419,4 +449,3 @@ int main(int argc, char** argv) {
     glutMainLoop();
     return 0;
 }
-
